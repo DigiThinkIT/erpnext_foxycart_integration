@@ -9,7 +9,7 @@ import xmltodict
 
 @frappe.whitelist(allow_guest=True)
 def process_new_order():
-	API_KEY = frappe.db.get_value('ICLOAK Customization Settings', None, 'foxy_api_key')
+	API_KEY = frappe.db.get_single_value('ICLOAK Customization Settings', 'foxy_api_key')
 	foxy_data = frappe.local.request.form.get("FoxyData")
 	data = decrypt_str(urllib.unquote_plus(foxy_data), API_KEY)
 	data_dict = xmltodict.parse(data)
