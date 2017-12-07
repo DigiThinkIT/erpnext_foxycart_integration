@@ -16,8 +16,12 @@ def process_new_order():
 	API_KEY = frappe.db.get_single_value('ICLOAK Customization Settings', 'foxy_api_key')
 	encrypted_data = frappe.local.request.form.get("FoxyData")
 	decrypted_data = decrypt_str(urllib.unquote_plus(encrypted_data), API_KEY)
+
 	foxy_data = json.loads(json.dumps(xmltodict.parse(decrypted_data).get("foxydata").get("transactions").get("transaction")))
 	customer = find_customer(foxy_data.get("customer_email"))
+	if frappe.session.user == "Guest":
+		frappe.set_user("Administrator")
+
 	address = None
 	if not customer:
 		customer = make_customer(foxy_data)
