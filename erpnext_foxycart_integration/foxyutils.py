@@ -1,6 +1,10 @@
 """
 Utilities for decrypting and parsing a FoxyCart datafeed.
 """
+import frappe
+import urllib
+import xmltodict
+import json
 
 # Thanks, Wikipedia: http://en.wikipedia.org/wiki/RC4#Implementation
 class ARC4:
@@ -33,3 +37,14 @@ class ARC4:
 def decrypt_str(data_str, crypt_key):
 	a = ARC4(crypt_key)
 	return a.crypt(data_str)
+
+
+def decrypt_data(encrypted_data, key=None):
+	API_KEY = key or frappe.get_single("Foxycart Settings").get_password("api_key")
+
+	if not API_KEY:
+		frappe.throw("API Key is not set, please check Foxycart Settings")
+	decrypted_data = decrypt_str(urllib.unquote_plus(encrypted_data), API_KEY)
+	# First parse the XML into a Ordered Dict and then into a normal Dict
+	foxycart_data = json.loads(json.dumps(xmltodict.parse(decrypted_data).get("foxydata").get("transactions").get("transaction")))
+	return foxycart_data
