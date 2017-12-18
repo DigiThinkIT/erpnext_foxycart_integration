@@ -41,5 +41,6 @@ before_script:
 
 script:
   - set -e
-  - bench run-tests --module erpnext_foxycart_integration.tests.test_process_order
+  - bench execute erpnext.demo.setup.setup_data.complete_setup
+  - bench run-tests --app erpnext_foxycart_integration
   - sleep 5

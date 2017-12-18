@@ -82,10 +82,18 @@ def make_sales_order(customer, foxycart_data, foxycart_settings):
 	if type(foxy_items) == dict:
 		foxy_items = [foxy_items]
 	for item in foxy_items:
+		product_name = item.get("product_name")
+		if not frappe.db.exists("Item", {"item_code" : product_name}):
+			frappe.get_doc({"doctype" : "Item",
+							"item_code" : product_name,
+							"item_group" : foxycart_settings.item_group or "All Item Groups",
+							"stock_uom" : foxycart_settings.uom,
+							"standard_rate" : item.get("product_price")
+			}).insert()
 		sales_items.append({
-			"item_code": item.get("product_name"),
-			"item_name": item.get("product_name"),
-			"description": item.get("product_name"),
+			"item_code": product_name,
+			"item_name": product_name,
+			"description": frappe.db.get_value("Item", {"item_code" : product_name}, "description") or product_name,
 			"qty": item.get("product_quantity"),
 			"uom": foxycart_settings.uom or "Nos",
 			"conversion_factor": foxycart_settings.conversion_factor or 1,
