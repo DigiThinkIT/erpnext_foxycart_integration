@@ -9,6 +9,6 @@ def get_data():
 			"color": "red",
 			"icon": "octicon octicon-radio-tower",
 			"type": "module",
-			"label": _("ERPNext FoxyCart integration")
+			"label": _("Foxycart Integration")
 		}
 	]

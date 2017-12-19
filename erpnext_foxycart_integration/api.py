@@ -5,13 +5,14 @@ from werkzeug.wrappers import Response
 
 from erpnext.selling.doctype.sales_order.sales_order import make_sales_invoice
 from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
+from frappe.utils import cint
 
 @frappe.whitelist(allow_guest=True)
 def push():
 	encrypted_data = frappe.local.request.form.get("FoxyData")
 	foxycart_data = decrypt_data(encrypted_data)
 	process_new_order(foxycart_data)
-	
+
 	response = Response()
 	response.data = "foxy"
 	return response
@@ -20,7 +21,7 @@ def process_new_order(foxycart_data):
 	foxycart_settings = frappe.get_single("Foxycart Settings")
 	customer = find_customer(foxycart_data.get("customer_email"))
 
-	# Hack to prevent permission issues 
+	# Hack to prevent permission issues
 	if frappe.session.user == "Guest":
 		frappe.set_user("Administrator")
 
@@ -100,6 +101,24 @@ def make_sales_order(customer, foxycart_data, foxycart_settings):
 			"rate": item.get("product_price")
 		})
 	sales_order.set("items", sales_items)
+	taxes = []
+	if cint(foxycart_data.get("shipping_total")) or foxycart_data.get("shipto_shipping_service_description"):
+		taxes.append({
+			"charge_type": "Actual",
+			"account_head": foxycart_settings.shipping_account_head,
+			"description": foxycart_data.get("shipto_shipping_service_description", "Shipping Charges"),
+			"tax_amount": cint(foxycart_data.get("shipping_total"))
+		})
+
+	if cint(foxycart_data.get("tax_total")) > 0:
+		taxes.append({
+			"charge_type": "Actual",
+			"account_head": foxycart_settings.tax_account_head,
+			"description": "Tax",
+			"tax_amount": cint(foxycart_data.get("tax_total"))
+		})
+	sales_order.set("taxes", taxes)
+
 	sales_order.flags.ignore_permissions=True
 	sales_order.save()
 	sales_order.submit()
