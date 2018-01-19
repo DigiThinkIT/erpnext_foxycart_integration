@@ -34,7 +34,8 @@ def process_new_order(foxycart_data):
 		if not address:
 			address = make_address(customer, foxycart_data)
 
-	sales_order = make_sales_order(customer, foxycart_data, foxycart_settings)
+	sales_order = make_sales_order(
+		customer, address, foxycart_data, foxycart_settings)
 	sales_invoice = make_sales_invoice(sales_order, ignore_permissions=True)
 	sales_invoice.save()
 	sales_invoice.submit()
@@ -72,7 +73,7 @@ def make_customer(foxycart_data, foxycart_settings):
 	return customer.name
 
 
-def make_sales_order(customer, foxycart_data, foxycart_settings):
+def make_sales_order(customer, address, foxycart_data, foxycart_settings):
 	sales_order = frappe.new_doc("Sales Order")
 	sales_order.update({
 		"customer": customer,
@@ -118,6 +119,8 @@ def make_sales_order(customer, foxycart_data, foxycart_settings):
 			"tax_amount": cint(foxycart_data.get("tax_total"))
 		})
 	sales_order.set("taxes", taxes)
+	sales_order.customer_address = address
+	sales_order.shipping_address_name = address
 
 	sales_order.flags.ignore_permissions=True
 	sales_order.save()
