@@ -148,6 +148,7 @@ def find_address(customer, foxycart_data):
 def make_address(customer, foxycart_data):
 	address = frappe.new_doc("Address")
 	country = frappe.get_all("Country", filters={"code":foxycart_data.get("country")})[0].name
+	territory = frappe.get_all("Territory"), filters={"name":foxycart_data.get("country")})[0].name or "All Territories"
 	address.update({
 		"address_title": '%s %s' % (foxycart_data.get("first_name"), foxycart_data.get("last_name")),
 		"address_line1": foxycart_data.get("address1"),
