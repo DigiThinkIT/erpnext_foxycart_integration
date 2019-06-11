@@ -46,5 +46,7 @@ def decrypt_data(encrypted_data, key=None):
 		frappe.throw("API Key is not set, please check Foxycart Settings")
 	decrypted_data = decrypt_str(urllib.unquote_plus(encrypted_data), API_KEY)
 	# First parse the XML into a Ordered Dict and then into a normal Dict
-	foxycart_data = json.loads(json.dumps(xmltodict.parse(decrypted_data).get("foxydata").get("transactions").get("transaction")))
+	foxycart_data = json.loads(decrypted_data)
 	return foxycart_data
+	
+
