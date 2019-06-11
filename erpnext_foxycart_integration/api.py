@@ -1,5 +1,6 @@
-
 import frappe
+import json
+
 from foxyutils import decrypt_data
 from werkzeug.wrappers import Response
 
@@ -9,12 +10,15 @@ from frappe.utils import cint
 
 @frappe.whitelist(allow_guest=True)
 def push():
-	encrypted_data = frappe.local.request.form.get("FoxyData")
-	foxycart_data = decrypt_data(encrypted_data)
-	process_new_order(foxycart_data)
-
 	response = Response()
-	response.data = "foxy"
+	if frappe.request.data:
+		fd = json.loads(frappe.request.data)
+		process_new_order(fd)
+	else:
+		fd = "no data"
+
+	response.data = fd	
+
 	return response
 
 def process_new_order(foxycart_data):
@@ -65,7 +69,7 @@ def make_customer(foxycart_data, foxycart_settings):
 		"customer_email": foxycart_data.get("customer_email"),
 		"customer_type": foxycart_settings.customer_type or "Individual",
 		"customer_group": foxycart_settings.customer_group or "Individual",
-		"territory": foxycart_settings.territory or "All Territories"
+		"territory": foxycart_data.get("customer_country") or foxycart_data.get("country") or foxycart_settings.territory or "All Territories"
 	})
 	customer.flags.ignore_permissions=True
 	customer.save()
@@ -130,31 +134,31 @@ def make_sales_order(customer, address, foxycart_data, foxycart_settings):
 
 def find_address(customer, foxycart_data):
 	address = frappe.get_all("Address", filters={
-		"address_title": '%s %s' % (foxycart_data.get("shipping_first_name"), foxycart_data.get("shipping_last_name")),
-		"address_line1": foxycart_data.get("shipping_address1"),
-		"address_line2": foxycart_data.get("shipping_address2"),
+		"address_title": '%s %s' % (foxycart_data.get("first_name"), foxycart_data.get("last_name")),
+		"address_line1": foxycart_data.get("address1"),
+		"address_line2": foxycart_data.get("address2"),
 		"address_type": "Shipping",
-		"city": foxycart_data.get("shipping_city"),
-		"state": foxycart_data.get("shipping_state"),
-		"pincode": foxycart_data.get("shipping_postal_code")
+		"city": foxycart_data.get("city"),
+		"state": foxycart_data.get("region"),
+		"pincode": foxycart_data.get("postal_code")
 	})
 	if address:
 		return address[0].name
 
 def make_address(customer, foxycart_data):
 	address = frappe.new_doc("Address")
-	country = frappe.get_all("Country", filters={"code":foxycart_data.get("shipping_country")})[0].name
+	country = frappe.get_all("Country", filters={"code":foxycart_data.get("country")})[0].name
 	address.update({
-		"address_title": '%s %s' % (foxycart_data.get("shipping_first_name"), foxycart_data.get("shipping_last_name")),
-		"address_line1": foxycart_data.get("shipping_address1"),
-		"address_line2": foxycart_data.get("shipping_address2"),
+		"address_title": '%s %s' % (foxycart_data.get("first_name"), foxycart_data.get("last_name")),
+		"address_line1": foxycart_data.get("address1"),
+		"address_line2": foxycart_data.get("address2"),
 		"address_type": "Shipping",
-		"city": foxycart_data.get("shipping_city"),
-		"state": foxycart_data.get("shipping_state"),
+		"city": foxycart_data.get("city"),
+		"state": foxycart_data.get("region"),
 		"country": country,
-		"pincode": foxycart_data.get("shipping_postal_code"),
+		"pincode": foxycart_data.get("postal_code"),
 		"email_id": foxycart_data.get("customer_email"),
-		"phone": foxycart_data.get("shipping_phone")
+		"phone": foxycart_data.get("phone")
 	})
 	address.set("links", [{"link_doctype": "Customer", "link_name": customer}])
 	address.flags.ignore_permissions= True
