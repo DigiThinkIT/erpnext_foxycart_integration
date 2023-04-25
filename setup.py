@@ -14,12 +14,7 @@ with open('erpnext_foxycart_integration/__init__.py', 'rb') as f:
         f.read().decode('utf-8')).group(1)))
 
 requirements = parse_requirements("requirements.txt", session="")
-# Generator must be converted to list, or we will only have one chance to read each element, meaning that the first requirement will be skipped.
 requirements = list(requirements)
-try:
-    requirements = [str(ir.req) for ir in install_reqs]
-except:
-    requirements = [str(ir.requirement) for ir in install_reqs]
 
 setup(
 	name='erpnext_foxycart_integration',
@@ -30,6 +25,6 @@ setup(
 	packages=find_packages(),
 	zip_safe=False,
 	include_package_data=True,
-	install_requires=[str(ir.req) for ir in requirements],
+	install_requires=[str(ir.requirement) for ir in requirements],
 	dependency_links=[str(ir._link) for ir in requirements if ir._link]
 )
