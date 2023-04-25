@@ -144,10 +144,10 @@ def make_sales_order(customer, address, foxycart_data, foxycart_settings):
 
 	sales_order.customer_address = address
 	sales_order.shipping_address_name = address
-	sales_order.status = "Draft"
+	# sales_order.status = "Draft"
 	sales_order.flags.ignore_permissions = True
 	sales_order.save()
-	sales_order.submit()
+	# sales_order.submit()
 
 	frappe.db.commit()
 
