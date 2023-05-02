@@ -28,8 +28,10 @@ def push():
 			process_new_order(fd)
 			response.data = {"status": "ok"}
 		except Exception as e:
-			fd = "no data"
+			# Log to Frappe error log
+			frappe.error_log(frappe.get_traceback(), f"{e}")
 			response.data = {"error": str(e)}
+			
 		return response
 
 	# Otherwise, treat the incoming request as invalid
@@ -57,19 +59,18 @@ def process_new_order(foxycart_data):
 		if not address:
 			address = make_address(customer, foxycart_data)
 
-	sales_order = make_sales_order(
-		customer, address, foxycart_data, foxycart_settings)
-	sales_invoice = make_sales_invoice(sales_order, ignore_permissions=True)
-	sales_invoice.save()
-	sales_invoice.submit()
+	make_sales_order(customer, address, foxycart_data, foxycart_settings)
+	# sales_invoice = make_sales_invoice(sales_order, ignore_permissions=True)
+	# sales_invoice.save()
+	# sales_invoice.submit()
 	frappe.db.commit()
-	payment_entry = get_payment_entry("Sales Invoice", sales_invoice.name)
-	payment_entry.reference_no = foxycart_data.get("id")
-	payment_entry.reference_date = foxycart_data.get("transaction_date")
-	payment_entry.flags.ignore_permissions= True
-	payment_entry.save()
-	payment_entry.submit()
-	frappe.db.commit()
+	# payment_entry = get_payment_entry("Sales Invoice", sales_invoice.name)
+	# payment_entry.reference_no = foxycart_data.get("id")
+	# payment_entry.reference_date = foxycart_data.get("transaction_date")
+	# payment_entry.flags.ignore_permissions= True
+	# payment_entry.save()
+	# payment_entry.submit()
+	# frappe.db.commit()
 
 def find_customer(customer_email):
 	customer = frappe.get_all("Customer", filters={"customer_email": customer_email})
@@ -103,13 +104,14 @@ def make_sales_order(customer, address, foxycart_data, foxycart_settings):
 	sales_items = []
 	
 	foxy_items = foxycart_data.get("_embedded").get("fx:items")
+
 	if type(foxy_items) == dict:
 		foxy_items = [foxy_items]
 
 	for item in foxy_items:
 		product_name = item.get("name")
 
-		if not frappe.db.exists("Item", {"name" : product_name}):
+		if not frappe.db.exists("Item", {"item_name" : product_name}):
 			print(f"Product: {product_name} not found")
 
 		else:
@@ -141,7 +143,6 @@ def make_sales_order(customer, address, foxycart_data, foxycart_settings):
 	# 		"tax_amount": cint(foxycart_data.get("tax_total"))
 	# 	})
 	sales_order.set("taxes", [])
-
 	sales_order.customer_address = address
 	sales_order.shipping_address_name = address
 	sales_order.status = "Draft"
@@ -167,7 +168,6 @@ def find_address(customer, foxycart_data):
 		return address[0].name
 
 def make_address(customer, foxycart_data):
-
 	print(foxycart_data)
 	address = frappe.new_doc("Address")
 
